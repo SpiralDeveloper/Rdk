@@ -2,6 +2,7 @@ package fabric.bits.api.rdk;
 
 import android.app.Activity;
 import android.support.annotation.LayoutRes;
+import android.support.v4.app.Fragment;
 import android.view.View;
 
 import java.lang.reflect.Field;
@@ -26,18 +27,18 @@ public class RdkManager {
        processClick(activity);
     }
 
-    private static void processIntent(Activity activity) {
-        for (Field m : activity.getClass().getDeclaredFields()) {
-            if (m.isAnnotationPresent(RIntent.class)) {
-                RIntent rIntent = m.getAnnotation(RIntent.class);
+    public static void bind(Fragment fragment,View view) {
+        processDefine(fragment,view);
+        processClick(fragment,view);
+    }
+
+    private static void processDefine(Fragment fragment,View view) {
+        for (Field m : fragment.getClass().getDeclaredFields()) {
+            if (m.isAnnotationPresent(RDefine.class)) {
+                RDefine rDefine = m.getAnnotation(RDefine.class);
                 m.setAccessible(true);
                 try {
-                    if (m.getType().isAssignableFrom(long.class))
-                        m.set(activity, activity.getIntent().getLongExtra(m.getName(), 0));
-                    else if (m.getType().isAssignableFrom(long[].class))
-                        m.set(activity, activity.getIntent().getLongArrayExtra(m.getName()));
-                    else if (m.getType().isAssignableFrom(String.class))
-                        m.set(activity, activity.getIntent().getStringExtra(m.getName()));
+                    m.set(fragment, view.findViewById(rDefine.value()));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -59,6 +60,28 @@ public class RdkManager {
         }
     }
 
+
+    private static void processIntent(Activity activity) {
+        for (Field m : activity.getClass().getDeclaredFields()) {
+            if (m.isAnnotationPresent(RIntent.class)) {
+                RIntent rIntent = m.getAnnotation(RIntent.class);
+                m.setAccessible(true);
+                try {
+                    if (m.getType().isAssignableFrom(long.class))
+                        m.set(activity, activity.getIntent().getLongExtra(m.getName(), 0));
+                    else if (m.getType().isAssignableFrom(long[].class))
+                        m.set(activity, activity.getIntent().getLongArrayExtra(m.getName()));
+                    else if (m.getType().isAssignableFrom(String.class))
+                        m.set(activity, activity.getIntent().getStringExtra(m.getName()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+
+
     private static void processClick(final Activity activity) {
         for (final Method m : activity.getClass().getMethods()) {
             if (m.isAnnotationPresent(RClick.class)) {
@@ -69,6 +92,27 @@ public class RdkManager {
                     public void onClick(View view) {
                         try {
                             m.invoke(activity);
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } catch (InvocationTargetException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    private static void processClick(final Fragment fragment,View view) {
+        for (final Method m : fragment.getClass().getMethods()) {
+            if (m.isAnnotationPresent(RClick.class)) {
+                RClick rClick = m.getAnnotation(RClick.class);
+                m.setAccessible(true);
+                view.findViewById(rClick.value()).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        try {
+                            m.invoke(fragment);
                         } catch (IllegalAccessException e) {
                             e.printStackTrace();
                         } catch (InvocationTargetException e) {
