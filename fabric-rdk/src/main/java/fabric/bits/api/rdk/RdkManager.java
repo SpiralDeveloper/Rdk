@@ -3,7 +3,10 @@ package fabric.bits.api.rdk;
 import android.app.Activity;
 import android.support.annotation.LayoutRes;
 import android.support.v4.app.Fragment;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
+import android.widget.EditText;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -12,6 +15,8 @@ import java.lang.reflect.Method;
 import fabric.bits.api.rdk.annotations.RClick;
 import fabric.bits.api.rdk.annotations.RDefine;
 import fabric.bits.api.rdk.annotations.RIntent;
+import fabric.bits.api.rdk.annotations.RLayout;
+import fabric.bits.api.rdk.annotations.RTextWatcher;
 
 public class RdkManager {
 
@@ -22,9 +27,11 @@ public class RdkManager {
     }
 
     public static void bind(Activity activity) {
-       processIntent(activity);
-       processDefine(activity);
-       processClick(activity);
+        processLayout(activity);
+        processIntent(activity);
+        processDefine(activity);
+        processClick(activity);
+        processTextWatcher(activity);
     }
 
     public static void bind(Fragment fragment,View view) {
@@ -45,6 +52,13 @@ public class RdkManager {
             }
         }
     }
+    private static void processLayout(Activity activity) {
+        if(activity.getClass().isAnnotationPresent(RLayout.class)){
+            RLayout layout=activity.getClass().getAnnotation(RLayout.class);
+            activity.setContentView(layout.value());
+        }
+    }
+
 
     private static void processDefine(Activity activity) {
         for (Field m : activity.getClass().getDeclaredFields()) {
@@ -76,6 +90,39 @@ public class RdkManager {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+            }
+        }
+    }
+
+    private static void processTextWatcher(final Activity activity) {
+        for (final Method m : activity.getClass().getMethods()) {
+            if (m.isAnnotationPresent(RTextWatcher.class)) {
+                RTextWatcher rTextWatcher = m.getAnnotation(RTextWatcher.class);
+                m.setAccessible(true);
+
+                final EditText editText=activity.findViewById(rTextWatcher.value());
+                editText.addTextChangedListener(new TextWatcher() {
+                    @Override
+                    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+                    }
+
+                    @Override
+                    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                        try {
+                            m.invoke(activity,editText);
+                        } catch (IllegalAccessException e) {
+                            e.printStackTrace();
+                        } catch (InvocationTargetException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void afterTextChanged(Editable editable) {
+
+                    }
+                });
             }
         }
     }
