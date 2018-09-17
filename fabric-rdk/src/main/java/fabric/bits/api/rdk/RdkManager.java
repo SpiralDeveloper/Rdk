@@ -110,7 +110,7 @@ public class RdkManager {
                     @Override
                     public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                         try {
-                            m.invoke(activity,editText);
+                            m.invoke(activity,editText,charSequence.toString());
                         } catch (IllegalAccessException e) {
                             e.printStackTrace();
                         } catch (InvocationTargetException e) {
