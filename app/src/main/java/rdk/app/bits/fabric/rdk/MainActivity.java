@@ -37,7 +37,7 @@ public class MainActivity extends RdkActivity {
     }
 
 
-    @
+
     void watch(EditText editText){
 
     }
