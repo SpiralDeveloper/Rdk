@@ -1,13 +1,14 @@
 package fabric.bits.api.rdk;
 
 import android.app.Activity;
+import android.graphics.Typeface;
 import android.support.annotation.LayoutRes;
 import android.support.v4.app.Fragment;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -15,6 +16,7 @@ import java.lang.reflect.Method;
 
 import fabric.bits.api.rdk.annotations.RClick;
 import fabric.bits.api.rdk.annotations.RDefine;
+import fabric.bits.api.rdk.annotations.RFont;
 import fabric.bits.api.rdk.annotations.RIntent;
 import fabric.bits.api.rdk.annotations.RLayout;
 import fabric.bits.api.rdk.annotations.RTextWatcher;
@@ -35,28 +37,38 @@ public class RdkManager {
         processTextWatcher(activity);
     }
 
-    public static void bind(Fragment fragment,View view) {
-        processDefine(fragment,view);
-        processClick(fragment,view);
-        processTextWatcher(fragment,view);
+    public static void bind(Fragment fragment, View view) {
+        processDefine(fragment, view);
+        processClick(fragment, view);
+        processTextWatcher(fragment, view);
     }
 
-    private static void processDefine(Fragment fragment,View view) {
+    private static void processDefine(Fragment fragment, View view) {
         for (Field m : fragment.getClass().getDeclaredFields()) {
             if (m.isAnnotationPresent(RDefine.class)) {
                 RDefine rDefine = m.getAnnotation(RDefine.class);
                 m.setAccessible(true);
                 try {
-                    m.set(fragment, view.findViewById(rDefine.value()));
+                    View widget = view.findViewById(rDefine.value());
+                    m.set(fragment, widget);
+                    if (m.isAnnotationPresent(RFont.class)) {
+                        Typeface typeface = Typeface.createFromAsset(fragment.getActivity().getAssets(), m.getAnnotation(RFont.class).value());
+                        if (widget instanceof TextView) {
+                            ((TextView) widget).setTypeface(typeface);
+                        } else if (widget instanceof EditText) {
+                            ((EditText) widget).setTypeface(typeface);
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
     }
+
     private static void processLayout(Activity activity) {
-        if(activity.getClass().isAnnotationPresent(RLayout.class)){
-            RLayout layout=activity.getClass().getAnnotation(RLayout.class);
+        if (activity.getClass().isAnnotationPresent(RLayout.class)) {
+            RLayout layout = activity.getClass().getAnnotation(RLayout.class);
             activity.setContentView(layout.value());
         }
     }
@@ -68,15 +80,22 @@ public class RdkManager {
                 RDefine rDefine = m.getAnnotation(RDefine.class);
                 m.setAccessible(true);
                 try {
-                    m.set(activity, activity.findViewById(rDefine.value()));
+                    View widget = activity.findViewById(rDefine.value());
+                    m.set(activity, widget);
+                    if (m.isAnnotationPresent(RFont.class)) {
+                        Typeface typeface = Typeface.createFromAsset(activity.getAssets(), m.getAnnotation(RFont.class).value());
+                        if (widget instanceof TextView) {
+                           ((TextView) widget).setTypeface(typeface);
+                        } else if (widget instanceof EditText) {
+                            ((EditText) widget).setTypeface(typeface);
+                        }
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
     }
-
-
 
 
     private static void processIntent(Activity activity) {
@@ -104,7 +123,7 @@ public class RdkManager {
                 RTextWatcher rTextWatcher = m.getAnnotation(RTextWatcher.class);
                 m.setAccessible(true);
 
-                final EditText editText=activity.findViewById(rTextWatcher.value());
+                final EditText editText = activity.findViewById(rTextWatcher.value());
                 editText.addTextChangedListener(new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -114,7 +133,7 @@ public class RdkManager {
                     @Override
                     public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                         try {
-                            m.invoke(activity,editText,charSequence.toString());
+                            m.invoke(activity, editText, charSequence.toString());
                         } catch (IllegalAccessException e) {
                             e.printStackTrace();
                         } catch (InvocationTargetException e) {
@@ -131,13 +150,13 @@ public class RdkManager {
         }
     }
 
-    private static void processTextWatcher(final Fragment fragment,View view) {
+    private static void processTextWatcher(final Fragment fragment, View view) {
         for (final Method m : fragment.getClass().getMethods()) {
             if (m.isAnnotationPresent(RTextWatcher.class)) {
                 RTextWatcher rTextWatcher = m.getAnnotation(RTextWatcher.class);
                 m.setAccessible(true);
 
-                final EditText editText=view.findViewById(rTextWatcher.value());
+                final EditText editText = view.findViewById(rTextWatcher.value());
                 editText.addTextChangedListener(new TextWatcher() {
                     @Override
                     public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -147,7 +166,7 @@ public class RdkManager {
                     @Override
                     public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
                         try {
-                            m.invoke(fragment,editText,charSequence.toString());
+                            m.invoke(fragment, editText, charSequence.toString());
                         } catch (IllegalAccessException e) {
                             e.printStackTrace();
                         } catch (InvocationTargetException e) {
@@ -163,7 +182,6 @@ public class RdkManager {
             }
         }
     }
-
 
 
     private static void processClick(final Activity activity) {
@@ -187,7 +205,7 @@ public class RdkManager {
         }
     }
 
-    private static void processClick(final Fragment fragment,View view) {
+    private static void processClick(final Fragment fragment, View view) {
         for (final Method m : fragment.getClass().getMethods()) {
             if (m.isAnnotationPresent(RClick.class)) {
                 RClick rClick = m.getAnnotation(RClick.class);
